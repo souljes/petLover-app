@@ -31,7 +31,10 @@ target 'PetLover' do
     ]
   end
 
-  config = use_native_modules!(config_command)
+  # config = use_native_modules!(config_command)
+  config = use_native_modules!
+  config[:build_settings] ||= {}
+  config[:build_settings]['DEFINES_MODULE'] = 'YES'
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
   use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
@@ -51,7 +54,14 @@ target 'PetLover' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
-
+  # Force DEFINES_MODULE = YES for specific conflicting targets
+  installer.pods_project.targets.each do |target|
+    if ['expo-dev-menu', 'Main', 'ReactNativeCompatibles', 'SafeAreaView', 'Vendored'].include?(target.name)
+      target.build_configurations.each do |config|
+        config.build_settings['DEFINES_MODULE'] = 'YES'
+      end
+    end
+  end
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
     installer.target_installation_results.pod_target_installation_results
